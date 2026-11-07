@@ -25,7 +25,7 @@ jobs:
       - name: Add the items
         run: |
           shopt -s nullglob
-          files=(data/inbox/*.jsonl data/inbox/*.json data/inbox/*.txt)
+          files=(data/inbox/*.jsonl)
           if [ ${#files[@]} -eq 0 ]; then echo "Inbox is empty."; exit 0; fi
           for f in "${files[@]}"; do
             python -m rojakbench add "$f"
