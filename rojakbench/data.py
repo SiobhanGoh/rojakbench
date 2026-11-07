@@ -69,7 +69,8 @@ def validate(item: dict) -> dict:
     return item
 
 
-def load(path: Path = ITEMS) -> list:
+def load(path: Path | None = None) -> list:
+    path = ITEMS if path is None else path
     if not Path(path).exists():
         return []
     items, seen = [], set()
@@ -108,14 +109,16 @@ def fingerprint(item: dict) -> str:
     return hashlib.sha256(json.dumps(keep, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
 
-def freeze(items: list, path: Path = FROZEN) -> dict:
+def freeze(items: list, path: Path | None = None) -> dict:
+    path = FROZEN if path is None else path
     test = sorted((i for i in items if split_of(i) == "test"), key=lambda i: i["id"])
     record = {"canary": CANARY, "items": {i["id"]: fingerprint(i) for i in test}}
     Path(path).write_text(json.dumps(record, indent=1) + "\n")
     return record
 
 
-def check_frozen(items: list, path: Path = FROZEN) -> None:
+def check_frozen(items: list, path: Path | None = None) -> None:
+    path = FROZEN if path is None else path
     if not Path(path).exists():
         return
     frozen = json.loads(Path(path).read_text())["items"]

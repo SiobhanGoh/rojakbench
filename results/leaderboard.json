@@ -36,7 +36,7 @@
    "test": 0
   }
  },
- "frozen": true,
+ "frozen": false,
  "models": [
   {
    "id": "baseline-majority",
