@@ -1,0 +1,43 @@
+name: Inbox
+# Upload a file from the authoring page into data/inbox/ on GitHub. This checks every item in it,
+# adds them to data/items.jsonl, and removes the file. A bad item stops the whole file, and the
+# error says which item and why.
+on:
+  push:
+    branches: [main]
+    paths: ["data/inbox/**"]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: commits
+  cancel-in-progress: false
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Add the items
+        run: |
+          shopt -s nullglob
+          files=(data/inbox/*.jsonl data/inbox/*.json data/inbox/*.txt)
+          if [ ${#files[@]} -eq 0 ]; then echo "Inbox is empty."; exit 0; fi
+          for f in "${files[@]}"; do
+            python -m rojakbench add "$f"
+            git rm -q "$f"
+          done
+          python -m rojakbench check
+      - name: Commit
+        run: |
+          git config user.name "SiobhanGoh"
+          git config user.email "siobhangoh17@gmail.com"
+          git add data
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -q -m "Add items from the inbox"
+          git pull -q --rebase origin main
+          git push -q origin HEAD:main
