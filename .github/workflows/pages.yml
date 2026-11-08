@@ -1,0 +1,42 @@
+name: Publish site
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", "results/**"]
+  workflow_run:
+    workflows: ["Weekly leaderboard", "Inbox"]
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Assemble the site
+        run: |
+          mkdir -p _site/data
+          cp -r site/. _site/
+          cp results/leaderboard.json _site/data/
+          [ -f results/agreement.json ] && cp results/agreement.json _site/data/ || true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
