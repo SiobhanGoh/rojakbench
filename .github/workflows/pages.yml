@@ -25,6 +25,11 @@ jobs:
           cp -r site/. _site/
           cp results/leaderboard.json _site/data/
           [ -f results/agreement.json ] && cp results/agreement.json _site/data/ || true
+          # Stamp each script and stylesheet with this commit, so a browser never pairs a new
+          # page with an old cached script.
+          v="${GITHUB_SHA::8}"
+          sed -i -E "s#(src|href)=\"(app\.js|author\.js|style\.css)\"#\1=\"\2?v=$v\"#g" _site/*.html
+          grep -o '\(app\|author\)\.js?v=[0-9a-f]*\|style\.css?v=[0-9a-f]*' _site/*.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
