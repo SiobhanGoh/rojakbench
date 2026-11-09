@@ -24,7 +24,8 @@ def check(_):
     data.check_frozen(items)
     c = Counter((i["task"], data.split_of(i)) for i in items)
     src = Counter(i["source"] for i in items)
-    print(f"{len(items)} items ({src.get('hand', 0)} hand-written, {src.get('variation', 0)} checked variations)")
+    print(f"{len(items)} items ({src.get('hand', 0)} hand-written, {src.get('drafted', 0)} picked from suggestions, "
+          f"{src.get('variation', 0)} checked variations)")
     for t in TASKS:
         print(f"  {t:10s} " + "  ".join(f"{s} {c[(t, s)]:4d}" for s, _ in data.SPLITS))
 
