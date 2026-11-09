@@ -96,6 +96,60 @@
   });
   fields(); listDrafts();
 
+  // ---------- 0. Pick from suggestions ----------
+  var sugg = [], used = store("rb-sugg-used") || {};
+  $("p-author").value = store("rb-author") || "";
+  function sKey(x) { return x.task + "|" + x.text; }
+  function drawPick() {
+    var t = $("p-task").value;
+    var all = sugg.filter(function (x) { return x.task === t; });
+    var left = all.filter(function (x) { return !used[sKey(x)]; });
+    var mine = drafts.filter(function (d) { return d.task === t; }).length;
+    $("p-count").textContent = left.length + " of " + all.length + " suggestions left for this task · " + mine + " " + t + " item" + (mine === 1 ? "" : "s") + " saved so far.";
+    $("p-list").innerHTML = left.map(function (x) {
+      var i = sugg.indexOf(x), ans = "";
+      if (LABELS[t]) ans = '<label for="pa' + i + '">Your answer</label><select id="pa' + i + '" data-pans="' + i + '"><option value="">choose…</option>' +
+        LABELS[t].map(function (l) { return "<option>" + l + "</option>"; }).join("") + "</select>";
+      else if (t === "particles") ans = '<p class="meta">What does “' + esc(x.particle) + '” add?</p>' + x.choices.map(function (c, k) {
+        return '<label style="font-weight:400;margin:6px 0"><input type="radio" name="pc' + i + '" value="' + k + '"> ' + "ABCD"[k] + ") " + esc(c) + "</label>"; }).join("");
+      else ans = '<label for="pe' + i + '">Formal English (check and fix)</label><textarea id="pe' + i + '" data-pen="' + i + '">' + esc(x.references.en) + '</textarea>' +
+        '<label for="pm' + i + '">Formal Bahasa Malaysia (check and fix)</label><textarea id="pm' + i + '" data-pms="' + i + '">' + esc(x.references.ms) + "</textarea>";
+      return '<div class="card"><label for="pt' + i + '">Message (edit it if it doesn\'t sound real)</label><textarea id="pt' + i + '" data-ptext="' + i + '">' + esc(x.text) + '</textarea>' + ans +
+        (x.ref ? '<p class="meta">Adapted from a public comment: <a href="' + esc(x.ref) + '" target="_blank" rel="noopener">source</a></p>' : "") +
+        '<button class="btn" type="button" data-padd="' + i + '">Add</button> <button class="btn quiet" type="button" data-pskip="' + i + '">Skip</button></div>';
+    }).join("") || '<div class="card">All done for this task. Pick another task above.</div>';
+  }
+  $("p-task").addEventListener("change", drawPick);
+  $("p-list").addEventListener("click", function (e) {
+    var a = e.target.getAttribute("data-padd"), k = e.target.getAttribute("data-pskip");
+    if (k !== null) { used[sKey(sugg[+k])] = "skipped"; store("rb-sugg-used", used); drawPick(); return; }
+    if (a === null) return;
+    var x = sugg[+a], t = x.task, text = document.querySelector('[data-ptext="' + a + '"]').value.trim(), au = $("p-author").value.trim();
+    if (!text) return toast("The message is empty");
+    var it = { id: t + "-" + (au ? au.toLowerCase() + "-" : "") + rid(), task: t, text: text, source: "drafted", author: au,
+               notes: x.ref ? "adapted from " + x.ref : "picked from suggestions" + (text !== x.text ? ", reworded" : "") };
+    if (LABELS[t]) {
+      var v = document.querySelector('[data-pans="' + a + '"]').value;
+      if (!v) return toast("Choose the answer first");
+      it.label = v;
+    } else if (t === "particles") {
+      var r = document.querySelector('input[name="pc' + a + '"]:checked');
+      if (!r) return toast("Choose the right meaning first");
+      if (text.toLowerCase().indexOf(x.particle.toLowerCase()) < 0) return toast("The particle must stay in the message");
+      it.particle = x.particle; it.choices = x.choices.slice(); it.answer = +r.value;
+    } else {
+      var en = document.querySelector('[data-pen="' + a + '"]').value.trim(), ms = document.querySelector('[data-pms="' + a + '"]').value.trim();
+      if (!en || !ms) return toast("Write both formal versions");
+      it.references = { en: en, ms: ms };
+    }
+    drafts.push(it); store("rb-drafts", drafts); store("rb-author", au);
+    used[sKey(x)] = "added"; store("rb-sugg-used", used);
+    listDrafts(); drawPick(); toast("Added");
+  });
+  fetch("suggestions.json", { cache: "no-cache" }).then(function (r) { return r.json(); })
+    .then(function (d) { sugg = d.items || []; drawPick(); })
+    .catch(function () { $("p-count").textContent = "Couldn't load the suggestions. Try refreshing the page."; });
+
   // ---------- 2. Review variations ----------
   var cands = [];
   function drawCands() {
