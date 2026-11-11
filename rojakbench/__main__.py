@@ -82,7 +82,7 @@ def main():
     sub.add_parser("freeze").set_defaults(fn=freeze)
     p = sub.add_parser("agreement"); p.add_argument("file"); p.set_defaults(fn=agreement)
     p = sub.add_parser("expand"); p.add_argument("--task", required=True, choices=list(TASKS)); p.add_argument("--n", type=int, default=3)
-    p.add_argument("--model", default="groq-llama-3.3-70b"); p.set_defaults(fn=expand)
+    p.add_argument("--model", default="groq-gpt-oss-120b"); p.set_defaults(fn=expand)
     a = ap.parse_args()
     a.fn(a)
 
