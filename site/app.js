@@ -103,8 +103,8 @@
     }
     render();
     host.appendChild(table);
-    if (incomplete.length) host.appendChild(el("p", { class: "note", style: "padding: 0 14px 4px", text: "Left off this week because some calls failed (a free-tier limit, usually): " +
-      incomplete.map(function (m) { return m.id + " (" + m.errors + " failed)"; }).join(", ") + ". They are asked again next week." }));
+    if (incomplete.length) host.appendChild(el("p", { class: "note", style: "padding: 0 14px 4px", text: "Not ranked yet, still sitting the exam (free tiers cap questions per day): " +
+      incomplete.map(function (m) { return m.id + " (" + m.errors + " of " + board.items + " questions to go)"; }).join(", ") + ". The rest are asked daily until done; answers already given are kept." }));
     var skipped = (board.models || []).filter(function (m) { return m.skipped; });
     if (skipped.length) host.appendChild(el("p", { class: "note", style: "padding: 0 14px 10px", text: "Not run this week: " + skipped.map(function (m) { return m.id; }).join(", ") + "." }));
   }

@@ -225,3 +225,10 @@ def test_time_budget_leaves_the_rest_for_next_run(items, tmp_path):
             return "positive"
     rows = run.sit(Slow(), data.load()[:4], run.Cache(tmp_path / "c.jsonl"), minutes=-1)
     assert all(r["error"].startswith("not reached") for r in rows)
+
+
+def test_unfinished_lists_models_that_were_cut_short(tmp_path):
+    (tmp_path / "scores").mkdir()
+    (tmp_path / "scores" / "a.json").write_text('{"complete": true}')
+    (tmp_path / "scores" / "b.json").write_text('{"complete": false}')
+    assert run.unfinished(tmp_path) == ["b"]
