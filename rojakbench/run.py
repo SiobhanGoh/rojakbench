@@ -122,6 +122,10 @@ def run(split: str = "test", only=None, configs=None, results: Path = RESULTS) -
              "frozen": data.FROZEN.exists(), "models": []}
     for m in models(train, configs):
         if only and m.id not in only:
+            # Re-running a few models keeps everyone else's last scores on the board.
+            saved = results / "scores" / f"{m.id}.json"
+            if saved.exists():
+                board["models"].append(json.loads(saved.read_text()))
             continue
         if not m.available():
             board["models"].append({"id": m.id, "skipped": f"no {m.needs} set"})

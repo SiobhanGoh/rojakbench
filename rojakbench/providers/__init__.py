@@ -113,7 +113,7 @@ def _post(url: str, body: dict, headers: dict, timeout: int = 60, tries: int = 5
                 detail = " ".join(e.read().decode("utf-8", "replace").split())
             except Exception:
                 detail = ""
-            msg = f"HTTP {e.code} from {urllib.parse.urlsplit(url).netloc}: {detail[:300]}"
+            msg = f"HTTP {e.code} from {urllib.parse.urlsplit(url).netloc}: {detail[:900]}"
             if e.code == 429 and _out_of_quota(detail, e.headers.get("Retry-After")):
                 raise QuotaError(msg) from None
             if e.code in (429, 500, 502, 503, 504) and k < tries - 1:

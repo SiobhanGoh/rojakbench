@@ -145,6 +145,8 @@ def test_full_run_with_cache(items, tmp_path, server, monkeypatch):
     n = len(_Handler.seen)
     run.run(b["split"], configs=cfg, results=tmp_path / "res")
     assert len(_Handler.seen) == n  # second run answered entirely from the cache
+    again = run.run(b["split"], only=["fake"], configs=cfg, results=tmp_path / "res")
+    assert {m["id"] for m in again["models"]} >= {"fake", "baseline-majority"}  # others keep their scores
 
 
 def test_strict_parsing_edge_cases():
