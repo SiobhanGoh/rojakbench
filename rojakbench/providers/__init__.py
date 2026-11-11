@@ -13,6 +13,7 @@ import json
 import os
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections import Counter
 
@@ -78,10 +79,18 @@ class CharTfidf(Model):
         return m.predict([item["text"]])[0] if m else self.fallback.answer(item, prompt)
 
 
+USER_AGENT = "rojakbench/1.0 (+https://github.com/SiobhanGoh/rojakbench)"  # some APIs refuse Python's default
+
+
+class APIError(RuntimeError):
+    """An API call that failed, with the service's own explanation (never the key)."""
+
+
 def _post(url: str, body: dict, headers: dict, timeout: int = 60, tries: int = 5) -> dict:
     data = json.dumps(body).encode()
     for k in range(tries):
-        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json", **headers})
+        req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json",
+                                                              "User-Agent": USER_AGENT, **headers})
         try:
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 return json.loads(r.read())
@@ -90,7 +99,11 @@ def _post(url: str, body: dict, headers: dict, timeout: int = 60, tries: int = 5
                 wait = float(e.headers.get("Retry-After") or 2 ** (k + 1))
                 time.sleep(min(wait, 60))
                 continue
-            raise
+            try:
+                detail = e.read().decode("utf-8", "replace")
+            except Exception:
+                detail = ""
+            raise APIError(f"HTTP {e.code} from {urllib.parse.urlsplit(url).netloc}: {' '.join(detail.split())[:300]}") from None
         except (urllib.error.URLError, TimeoutError):
             if k < tries - 1:
                 time.sleep(2 ** (k + 1))
