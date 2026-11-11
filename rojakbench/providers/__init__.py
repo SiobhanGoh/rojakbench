@@ -86,6 +86,20 @@ class APIError(RuntimeError):
     """An API call that failed, with the service's own explanation (never the key)."""
 
 
+class QuotaError(APIError):
+    """The free tier's allowance is used up for now (a daily cap, say). Asking again won't help, so
+    the runner stops asking this model and keeps what it has; the cache carries it into the next run."""
+
+
+def _out_of_quota(detail: str, retry_after: str | None) -> bool:
+    d = detail.lower().replace(" ", "")
+    try:
+        long_wait = float(retry_after or 0) > 120
+    except ValueError:
+        long_wait = False
+    return long_wait or any(w in d for w in ("perday", "daily", "quotaexceeded", "insufficient_quota"))
+
+
 def _post(url: str, body: dict, headers: dict, timeout: int = 60, tries: int = 5) -> dict:
     data = json.dumps(body).encode()
     for k in range(tries):
@@ -95,15 +109,21 @@ def _post(url: str, body: dict, headers: dict, timeout: int = 60, tries: int = 5
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 return json.loads(r.read())
         except urllib.error.HTTPError as e:
-            if e.code in (429, 500, 502, 503, 504) and k < tries - 1:
-                wait = float(e.headers.get("Retry-After") or 2 ** (k + 1))
-                time.sleep(min(wait, 60))
-                continue
             try:
-                detail = e.read().decode("utf-8", "replace")
+                detail = " ".join(e.read().decode("utf-8", "replace").split())
             except Exception:
                 detail = ""
-            raise APIError(f"HTTP {e.code} from {urllib.parse.urlsplit(url).netloc}: {' '.join(detail.split())[:300]}") from None
+            msg = f"HTTP {e.code} from {urllib.parse.urlsplit(url).netloc}: {detail[:300]}"
+            if e.code == 429 and _out_of_quota(detail, e.headers.get("Retry-After")):
+                raise QuotaError(msg) from None
+            if e.code in (429, 500, 502, 503, 504) and k < tries - 1:
+                try:
+                    wait = float(e.headers.get("Retry-After") or 2 ** (k + 1))
+                except ValueError:
+                    wait = 2 ** (k + 1)
+                time.sleep(min(wait, 60))
+                continue
+            raise APIError(msg) from None
         except (urllib.error.URLError, TimeoutError):
             if k < tries - 1:
                 time.sleep(2 ** (k + 1))
