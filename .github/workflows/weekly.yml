@@ -6,7 +6,8 @@ name: Weekly leaderboard
 on:
   schedule:
     - cron: "23 1 * * 0"     # Sunday 09:23 in Malaysia: everyone
-    - cron: "17 9 * * *"     # daily 17:17 in Malaysia: unfinished models only
+    - cron: "17 9,15 * * *"  # daily 17:17 and 23:17 in Malaysia: unfinished models only (two tries,
+                             # since GitHub sometimes delays or drops a scheduled run)
   workflow_dispatch:
     inputs:
       only:
@@ -34,7 +35,7 @@ jobs:
         timeout-minutes: 110
         env:
           ONLY: ${{ inputs.only }}
-          TOPUP: ${{ github.event.schedule == '17 9 * * *' && '1' || '' }}
+          TOPUP: ${{ github.event.schedule == '17 9,15 * * *' && '1' || '' }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       # Runs even if the step above failed or hit its cap, so answers already paid for are kept.

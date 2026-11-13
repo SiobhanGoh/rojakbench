@@ -232,3 +232,10 @@ def test_unfinished_lists_models_that_were_cut_short(tmp_path):
     (tmp_path / "scores" / "a.json").write_text('{"complete": true}')
     (tmp_path / "scores" / "b.json").write_text('{"complete": false}')
     assert run.unfinished(tmp_path) == ["b"]
+
+
+def test_gemini_thinking_settings():
+    lvl = P.from_config({"id": "g", "provider": "gemini", "model": "m", "thinking_level": "low", "timeout": 180})
+    assert lvl._thinking() == {"thinkingConfig": {"thinkingLevel": "low"}} and lvl.timeout == 180
+    assert P.from_config({"id": "g", "provider": "gemini", "model": "m", "thinking_budget": None})._thinking() == {}
+    assert P.from_config({"id": "g", "provider": "gemini", "model": "m"})._thinking() == {"thinkingConfig": {"thinkingBudget": 0}}
