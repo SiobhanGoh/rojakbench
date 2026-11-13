@@ -145,3 +145,6 @@ textarea { min-height: 84px; resize: vertical; }
 .rule { margin: 10px 0 4px; padding: 10px 14px; border-left: 3px solid var(--mango); border-radius: 10px;
   background: color-mix(in srgb, var(--mango) 14%, transparent); color: var(--ink); font-size: .92rem; line-height: 1.5; }
 .rule[hidden] { display: none; }
+.pill.hard { display: inline-block; margin-bottom: 6px; padding: 2px 10px; border-radius: 999px; font-size: .75rem; font-weight: 600;
+  background: var(--jambu-soft); color: var(--jambu); }
+:root[data-theme="dark"] .pill.hard { background: color-mix(in srgb, var(--jambu) 22%, transparent); color: #F4A9BD; }
