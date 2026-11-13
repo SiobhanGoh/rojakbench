@@ -239,3 +239,13 @@ def test_gemini_thinking_settings():
     assert lvl._thinking() == {"thinkingConfig": {"thinkingLevel": "low"}} and lvl.timeout == 180
     assert P.from_config({"id": "g", "provider": "gemini", "model": "m", "thinking_budget": None})._thinking() == {}
     assert P.from_config({"id": "g", "provider": "gemini", "model": "m"})._thinking() == {"thinkingConfig": {"thinkingBudget": 0}}
+
+
+def test_three_failures_in_a_row_stop_that_model(items, tmp_path):
+    calls = []
+    class Broken(P.Model):
+        id, cached = "broken", True
+        def answer(self, item, prompt):
+            calls.append(1); raise P.APIError("HTTP 503: busy")
+    rows = run.sit(Broken(), data.load()[:8], run.Cache(tmp_path / "c.jsonl"))
+    assert len(calls) == 3 and all(r["error"].startswith("not reached") for r in rows[3:])

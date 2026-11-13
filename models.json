@@ -45,7 +45,8 @@
    "min_interval": 6.5,
    "max_tokens": 4000,
    "thinking_level": "low",
-   "timeout": 180
+   "timeout": 180,
+   "tries": 2
   },
   {
    "id": "gemini-3.5-flash-lite",
